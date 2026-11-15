@@ -1,0 +1,22 @@
+{
+  "name": "kaesekrieg-desktop",
+  "productName": "Kaesekrieg",
+  "version": "0.1.0",
+  "description": "KÄSEKRIEG: Claws of Marmalade — Electron desktop shell",
+  "private": true,
+  "main": "main.cjs",
+  "author": "KÄSEKRIEG swarm",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke=../out/shots/desktop-shell/dev-smoke",
+    "build:linux": "node build.mjs --platform linux --arch x64",
+    "build:win": "node build.mjs --platform win32 --arch x64",
+    "build:mac": "node build.mjs --platform darwin --arch arm64",
+    "icon": "node icon/make-icon.mjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "18.3.6",
+    "electron": "40.0.0"
+  }
+}

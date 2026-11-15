@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>HUD demo</title>
+<style>
+  html,body{margin:0;background:#111;color:#ccc;font:12px monospace}
+  #wrap{position:relative;width:1440px;height:810px}
+  canvas{position:absolute;left:0;top:0;width:1440px;height:810px;image-rendering:pixelated}
+  #bar{position:absolute;left:0;top:812px}
+  button{font:12px monospace;margin:2px}
+</style></head><body>
+<div id="wrap"><canvas id="bg" width="480" height="270"></canvas><canvas id="hud" width="480" height="270"></canvas></div>
+<div id="bar"></div>
+<script type="module">
+import { buildAtlas } from '../art/registry.js';
+import { createHud } from './hud.js';
+import { drawAutomap, revealAll } from './automap.js';
+import { createBus } from '../core/events.js';
+import { START } from '../core/defs.js';
+
+const q = new URLSearchParams(location.search);
+const bg = document.getElementById('bg').getContext('2d');
+const hudCanvas = document.getElementById('hud'), ctx = hudCanvas.getContext('2d');
+window.__demo = { ready: false, errors: [] };
+addEventListener('error', (e) => window.__demo.errors.push(String(e.message)));
+addEventListener('unhandledrejection', (e) => window.__demo.errors.push(String(e.reason)));
+
+// ── mock world: 20×12 rooms with a gold door, steel door, exit, pushwall ──
+const MAP = [
+  '####################',
+  '#........#.........#',
+  '#..####..#..####...#',
+  '#..#..#..=..#..#...#',
+  '#..#..#..#..#..#...#',
+  '#..##.#..#..##.#...#',
+  '#........1.........#',
+  '#...##+###...##.##+#',
+  '#...#.....#..#.....#',
+  '#...#.....#..#..X..#',
+  '#...###+###..#######',
+  '####################',
+];
+const w = 20, h = MAP.length;
+const cells = new Uint8Array(w * h), doorAt = new Int16Array(w * h).fill(-1), doors = [];
+MAP.forEach((row, cy) => [...row].forEach((ch, cx) => {
+  const i = cy * w + cx;
+  if (ch === '#') cells[i] = 1; else if (ch === 'X') cells[i] = 4;
+  else if ('+=1'.includes(ch)) { cells[i] = 2; doorAt[i] = doors.length; doors.push({ cx, cy, vertical: ch !== '+' ? true : false, open: 0, lock: ch === '1' ? 'gold' : null, tex: ch === '=' ? 'door.steel' : 'door.wood' }); }
+}));
+const solid = (cx, cy) => cx < 0 || cy < 0 || cx >= w || cy >= h || cells[cy * w + cx] === 1 || cells[cy * w + cx] === 4 || cells[cy * w + cx] === 3;
+const world = {
+  w, h, cells, doors, doorAt, def: { name: 'The Cheese Cellar' },
+  blocksSight: (cx, cy) => solid(cx, cy) || cells[cy * w + cx] === 2,
+  hasLOS(x0, y0, x1, y1) {
+    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 8);
+    for (let i = 1; i < n; i++) { const t = i / n; if (this.blocksSight(Math.floor(x0 + (x1 - x0) * t), Math.floor(y0 + (y1 - y0) * t))) return false; }
+    return true;
+  },
+};
+
+function mkGame() {
+  return {
+    world, levelIndex: 0, status: 'playing', time: 0, tick: 0,
+    stats: { kills: 3, killsTotal: 12, treasure: 2, treasureTotal: 7, secrets: 0, secretsTotal: 2, time: 41, par: 120 },
+    player: { x: 2.5, y: 1.5, angle: 0.4, health: 100, lives: 9, score: 0, ammo: { hair: 40, yarn: 6, cell: 80 }, owned: [true, true, true, true, true],
+      weapon: 1, wstate: { phase: 'ready', t: 0, frame: 0, anim: 'idle' }, keys: { gold: false, silver: false }, bob: 0, dead: false },
+    scene: { viewLight: [1, 0.9, 0.8] },
+  };
+}
+
+// ── scripted timeline: [time, fn] ──
+const bus = createBus();
+const game = mkGame();
+let hud;
+const P = game.player;
+const msg = (text, kind) => bus.emit('msg', { text, kind });
+const fire = (len = 0.3) => { P.wstate = { phase: 'fire', t: 0, frame: 0, anim: 'fire' }; setTimeout(() => {}, 0); fireT = len; };
+let fireT = 0;
+const TL = [
+  [0.2, () => msg('Welcome to Schloss Gorgonzola', 'info')],
+  [0.8, () => { P.score = 1200; }],
+  [1.2, () => { bus.emit('hurt', { amount: 15, angle: P.angle - 1.2 }); P.health = 85; }],
+  [1.5, () => { fire(); }],
+  [2.0, () => { msg('Tuna!', 'pickup'); bus.emit('pickup', { id: 'tuna' }); P.health = 100; }],
+  [2.6, () => { P.weapon = 2; bus.emit('weapon', { index: 2 }); P.ammo.hair = 12; }],
+  [3.0, () => { P.keys.gold = true; msg('Gold key', 'pickup'); bus.emit('pickup', { id: 'key_gold' }); }],
+  [3.5, () => { bus.emit('hurt', { amount: 30, angle: P.angle + 2.5 }); P.health = 52; P.score = 4800; }],
+  [4.2, () => { msg('A secret area!', 'secret'); bus.emit('secret', {}); }],
+  [4.8, () => { P.weapon = 3; bus.emit('weapon', { index: 3 }); P.health = 31; }],
+  [5.6, () => { P.weapon = 4; bus.emit('weapon', { index: 4 }); P.health = 14; P.ammo.cell = 4; }],
+  [6.5, () => { P.health = 150; P.weapon = 0; msg('CATNIP!!', 'pickup'); }],
+  [7.5, () => { P.health = 0; P.dead = true; P.lives = 8; bus.emit('playerDied', {}); }],
+];
+let tIdx = 0, simT = 0;
+function resetGame() { const g = mkGame(); Object.assign(P, g.player); game.stats = g.stats; game.status = 'playing'; }
+
+function sky() {
+  const g = bg.createLinearGradient(0, 0, 0, 270);
+  g.addColorStop(0, '#2a2438'); g.addColorStop(0.5, '#4a3f52'); g.addColorStop(0.5, '#6a5a44'); g.addColorStop(1, '#2a2218');
+  bg.fillStyle = g; bg.fillRect(0, 0, 480, 270);
+  bg.fillStyle = '#7a6a8a';
+  for (let i = 0; i < 8; i++) bg.fillRect(i * 64 + 6, 70, 40, 130);       // fake wall pillars
+}
+
+function step(dt) {
+  simT += dt; game.time = simT;
+  while (tIdx < TL.length && TL[tIdx][0] <= simT) TL[tIdx++][1]();
+  if (fireT > 0) { fireT -= dt; P.wstate.t += dt; P.wstate.frame = Math.min(2, (P.wstate.t / 0.1) | 0); if (fireT <= 0) P.wstate = { phase: 'ready', t: 0, frame: 0, anim: 'idle' }; }
+  if (!P.dead) { P.x += Math.cos(P.angle) * dt * 0.3; P.angle += dt * 0.15; }
+  hud.draw(ctx, game, dt);   // hud clears nothing; we clear first
+}
+function frame(dt) { ctx.clearRect(0, 0, 480, 270); sky(); step(dt); }
+
+// Deterministic API for screenshots
+window.__demo.render = (t, opts = {}) => {
+  // rebuild from scratch and advance to t
+  resetGame(); tIdx = 0; simT = 0; fireT = 0;
+  hud = createHud(window.__demo.atlas);
+  const dt = 1 / 30;
+  for (let s = 0; s < t; s += dt) frame(dt);
+  if (opts.automap) { revealAll(game); drawAutomap(ctx, game); }
+};
+
+for (const ty of ['msg', 'hurt', 'pickup', 'flash', 'weapon', 'secret', 'playerDied']) bus.on(ty, (p) => hud && hud.onEvent(ty, p));
+const atlas = await buildAtlas();
+window.__demo.atlas = atlas;
+window.__demo.missing = atlas.missing.filter((n) => n.startsWith('hud.') || n.startsWith('wpn.'));
+const bar = document.getElementById('bar');
+for (const [label, t, o] of [['t=1.0', 1.0], ['t=2.2', 2.2], ['t=4.0', 4], ['t=6.0', 6], ['t=7.0', 7], ['t=8.5 dead', 8.5], ['automap', 3, { automap: true }]]) {
+  const b = document.createElement('button'); b.textContent = label; b.onclick = () => { live = false; window.__demo.render(t, o); }; bar.append(b);
+}
+let live = !q.has('t') && !q.has('automap');
+if (q.has('t') || q.has('automap')) window.__demo.render(+q.get('t') || 3, { automap: q.has('automap') });
+else hud = createHud(atlas);
+window.__demo.ready = true;
+let last = performance.now();
+(function loop(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (live) { frame(dt); if (simT > 10) { resetGame(); tIdx = 0; simT = 0; } }
+  requestAnimationFrame(loop);
+})(last);
+</script></body></html>

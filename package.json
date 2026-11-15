@@ -1,0 +1,11 @@
+{
+  "name": "kaesekrieg",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "KAESEKRIEG: Claws of Marmalade - a ray-traced, blocky, cheese-fueled maze shooter",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "tracker": "node tools/tracker/server.mjs"
+  }
+}

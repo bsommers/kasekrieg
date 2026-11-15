@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>KÄSEKRIEG sfx demo</title>
+<style>
+body{background:#1a1420;color:#fde3b0;font:14px/1.4 monospace;margin:16px}
+h1{color:#f08a1c;font-size:18px} button{background:#c25a0e;color:#fde3b0;border:0;padding:6px 10px;margin:3px;cursor:pointer;font:inherit}
+button:hover{background:#f08a1c;color:#1a1420} .row{margin:8px 0} pre{background:#0d0a10;padding:8px;overflow:auto}
+.bad{color:#ff6060}.ok{color:#9be37a}
+</style></head><body>
+<h1>KÄSEKRIEG &mdash; synthesised SFX</h1>
+<div class="row">pan: <input id="pan" type="range" min="-8" max="8" step="0.5" value="0"> <span id="panv">0</span> cells east of listener (listener faces east)
+ &nbsp; <button id="rt">run offline render test</button></div>
+<div id="btns"></div>
+<pre id="out">click a sound. "run offline render test" renders all with OfflineAudioContext.</pre>
+<script type="module">
+import { SFX } from '../core/defs.js';
+import { createAudio } from './audio.js';
+import { playSfx } from './sfx.js';
+
+const audio = createAudio();
+const out = document.getElementById('out');
+const pan = document.getElementById('pan');
+pan.oninput = () => { document.getElementById('panv').textContent = pan.value; };
+for (const name of SFX) {
+  const b = document.createElement('button'); b.textContent = name;
+  b.onclick = () => { audio.unlock(); audio.setListener(0, 0, 0); setTimeout(() => audio.sfx(name, { x: +pan.value, y: 0.001 * (+pan.value ? 1 : 0) }), 30); };
+  document.getElementById('btns').appendChild(b);
+}
+
+/** Render every SFX offline; returns [{name, dur, audible, peak, rms, ok, why}] */
+async function renderAll() {
+  const SR = 44100, rows = [];
+  for (const name of SFX) {
+    const ctx = new OfflineAudioContext(1, SR * 5, SR);
+    const dur = playSfx(ctx, ctx.destination, name, 0);
+    const buf = await ctx.startRendering();
+    const d = buf.getChannelData(0);
+    let peak = 0, sum = 0, last = 0;
+    for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > peak) peak = a; sum += d[i] * d[i]; if (a > 0.002) last = i; }
+    const rms = Math.sqrt(sum / d.length), audible = last / SR;
+    const why = [];
+    if (!(peak > 0.05)) why.push('silent');
+    if (!(peak < 1)) why.push('clips');
+    if (!(dur >= 0.02 && dur <= 4)) why.push('duration');
+    if (!(audible >= 0.02)) why.push('too short');
+    if (audible > dur + 0.25) why.push('tail past reported duration');
+    if (!Number.isFinite(rms) || d.some(Number.isNaN)) why.push('NaN');
+    rows.push({ name, dur: +dur.toFixed(3), audible: +audible.toFixed(3), peak: +peak.toFixed(3), rms: +rms.toFixed(4), ok: why.length === 0, why: why.join(',') });
+  }
+  return rows;
+}
+window.__renderAll = renderAll;
+document.getElementById('rt').onclick = async () => {
+  out.textContent = 'rendering...';
+  const rows = await renderAll();
+  out.innerHTML = 'name'.padEnd(18) + 'dur'.padStart(7) + 'audible'.padStart(9) + 'peak'.padStart(8) + 'rms'.padStart(8) + '\n' +
+    rows.map(r => `<span class="${r.ok ? 'ok' : 'bad'}">${r.name.padEnd(18)}${String(r.dur).padStart(7)}${String(r.audible).padStart(9)}${String(r.peak).padStart(8)}${String(r.rms).padStart(8)} ${r.ok ? '' : r.why}</span>`).join('\n');
+};
+window.__demoReady = true;
+</script></body></html>

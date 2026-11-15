@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>KÄSEKRIEG music demo</title>
+<style>
+body{background:#1a1420;color:#fde3b0;font:13px/1.4 monospace;margin:16px}
+h1{color:#f08a1c;font-size:18px} button{background:#c25a0e;color:#fde3b0;border:0;padding:6px 10px;margin:3px;cursor:pointer;font:inherit}
+button:hover{background:#f08a1c;color:#1a1420} .row{margin:8px 0} pre{background:#0d0a10;padding:8px;overflow:auto}
+canvas{display:block;background:#0d0a10;margin:2px 0 10px;image-rendering:pixelated;width:100%;max-width:1200px;height:110px}
+.bad{color:#ff6060}.ok{color:#9be37a} .nm{color:#f08a1c}
+</style></head><body>
+<h1>KÄSEKRIEG &mdash; tracker music</h1>
+<div class="row" id="btns"></div>
+<div class="row"><button id="stop">stop</button> <button id="rt">offline render + analyse all</button>
+ vol <input id="vol" type="range" min="0" max="1" step="0.05" value="0.6"> <span id="now">stopped</span></div>
+<pre id="out">click a song to play it live, or "offline render" to analyse all eight with OfflineAudioContext.</pre>
+<div id="plots"></div>
+<script type="module">
+import { MUSIC } from '../core/defs.js';
+import { createMusic, loadSong, renderSong, hz } from './music.js';
+
+const out = document.getElementById('out'), now = document.getElementById('now');
+let ac = null, music = null;
+function live(name) {
+  if (!ac) { ac = new AudioContext(); const g = ac.createGain(); g.gain.value = +document.getElementById('vol').value; g.connect(ac.destination); window.__g = g; music = createMusic(ac, g); }
+  ac.resume(); music.play(name); now.textContent = 'playing ' + name;
+}
+document.getElementById('stop').onclick = () => { if (music) music.stop(); now.textContent = 'stopped'; };
+document.getElementById('vol').oninput = e => { if (window.__g) window.__g.gain.value = +e.target.value; };
+for (const name of MUSIC) {
+  const b = document.createElement('button'); b.textContent = name; b.onclick = () => live(name);
+  document.getElementById('btns').appendChild(b);
+}
+
+const SR = 44100;
+
+/** Render one song offline (3 passes if looping) and analyse it. */
+async function analyse(name, { plot = true } = {}) {
+  const song = await loadSong(name);
+  // pick a sample rate that makes one loop a whole number of samples, so the periodicity check is not defeated by sub-sample shifts of noise
+  const gcd = (x, y) => y ? gcd(y, x % y) : x, m = song.bpm / gcd(song.bpm, 15 * song.totalSteps), sr = Math.max(1, Math.round(44100 / m)) * m;
+  const L = song.totalSteps * song.stepSec + song.swing * song.stepSec * 0;     // one pass
+  const loops = song.loop ? 3 : 1, tail = song.loop ? 0 : 3;
+  const total = L * loops + tail;
+  const ctx = new OfflineAudioContext(2, Math.ceil(sr * total), sr);
+  renderSong(ctx, ctx.destination, song, { loops });
+  const buf = await ctx.startRendering();
+  const a = buf.getChannelData(0), b = buf.getChannelData(1);
+  const N = a.length, Ls = Math.round(L * sr);
+  let peak = 0, sum = 0, clip = 0, dc = 0, nan = 0;
+  for (let i = 0; i < N; i++) {
+    const m = Math.max(Math.abs(a[i]), Math.abs(b[i]));
+    if (m > peak) peak = m; if (m >= 0.999) clip++;
+    if (Number.isNaN(a[i]) || Number.isNaN(b[i])) nan++;
+    sum += a[i] * a[i]; dc += a[i];
+  }
+  const rms = Math.sqrt(sum / N);
+  // longest quiet run (|x| < 0.003) in seconds, inside the steady-state pass
+  let run = 0, longest = 0;
+  const from = song.loop ? Ls : 0, to = song.loop ? 2 * Ls : Math.min(N, Math.round(L * sr));
+  for (let i = from; i < to; i++) { if (Math.abs(a[i]) < 0.003 && Math.abs(b[i]) < 0.003) { run++; if (run > longest) longest = run; } else run = 0; }
+  const r = { name, bars: song.bars, bpm: song.bpm, loop: song.loop, dur: +L.toFixed(2), peak: +peak.toFixed(3), rms: +rms.toFixed(4),
+    clipped: clip, nan, dc: +(dc / N).toFixed(5), quietRun: +(longest / sr).toFixed(2) };
+  if (song.loop) {
+    // steady state: pass 2 must equal pass 3 sample for sample (the tail of pass N-1 flows into pass N identically)
+    let diff = 0, se = 0, sn = 0;
+    for (let i = 0; i < Ls && 2 * Ls + i < N; i++) { diff = Math.max(diff, Math.abs(a[Ls + i] - a[2 * Ls + i]), Math.abs(b[Ls + i] - b[2 * Ls + i])); se += (a[Ls + i] - a[2 * Ls + i]) ** 2; sn += a[Ls + i] ** 2; }
+    // a loop length that is not a whole number of samples shifts pulse edges by a sub-sample amount, so max-diff is misleading; the relative RMS error is the real periodicity measure
+    const relErr = Math.sqrt(se / Math.max(sn, 1e-12));
+    // continuity across the seam: biggest sample-to-sample jump within +-3 ms of the seam vs the biggest elsewhere in pass 2
+    const w = Math.round(0.003 * sr); let seam = 0, elsewhere = 0;
+    for (let i = 2 * Ls - w; i < 2 * Ls + w; i++) seam = Math.max(seam, Math.abs(a[i] - a[i - 1]));
+    for (let i = Ls + 1; i < 2 * Ls; i++) if (i < 2 * Ls - w || i > 2 * Ls + w) elsewhere = Math.max(elsewhere, Math.abs(a[i] - a[i - 1]));
+    // loudness either side of the seam (150 ms windows)
+    const win = Math.round(0.15 * sr); let s1 = 0, s2 = 0;
+    for (let i = 0; i < win; i++) { s1 += a[2 * Ls - win + i] ** 2; s2 += a[2 * Ls + i] ** 2; }
+    Object.assign(r, { loopDiff: +diff.toExponential(2), relErr: +relErr.toFixed(4), seamJump: +seam.toFixed(4), maxJump: +elsewhere.toFixed(4),
+      seamRmsBefore: +Math.sqrt(s1 / win).toFixed(4), seamRmsAfter: +Math.sqrt(s2 / win).toFixed(4) });
+  } else {
+    let last = 0; for (let i = 0; i < N; i++) if (Math.abs(a[i]) > 0.003) last = i;
+    r.audible = +(last / sr).toFixed(2);
+    r.endsQuiet = Math.abs(a[N - 1]) < 0.001;
+  }
+  const why = [];
+  if (!(peak > 0.05)) why.push('silent');
+  if (peak >= 1 || clip) why.push('clips');
+  if (nan) why.push('NaN');
+  if (Math.abs(dc / N) > 0.01) why.push('dc');
+  if (song.loop) {
+    if (!(r.dur >= 40 && r.dur <= 90) && !['victory'].includes(name)) why.push('duration');
+    if (r.relErr > 0.1) why.push('loop not periodic');
+    if (r.seamJump > Math.max(0.05, r.maxJump * 1.5)) why.push('seam click');
+  } else if (!(r.audible > 2 && r.audible < 30)) why.push('duration');
+  if (r.quietRun > 1.0) why.push('gap');
+  r.ok = why.length === 0; r.why = why.join(',');
+  if (plot) drawPlot(name, song, a, N, L);
+  return r;
+}
+
+const COLORS = ['#ffd23e', '#f08a1c', '#9be37a', '#5a78b8', '#c21f24', '#fde3b0', '#ff7ac8', '#7fe0e0'];
+function drawPlot(name, song, a, N, L) {
+  const W = 1200, H = 110, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d'); g.fillStyle = '#0d0a10'; g.fillRect(0, 0, W, H);
+  // piano roll in the top 70 px
+  let lo = 127, hi = 0;
+  for (const evs of song.events) for (const e of evs) if (e.note !== undefined) { lo = Math.min(lo, e.note); hi = Math.max(hi, e.note); }
+  const span = Math.max(12, hi - lo + 1);
+  song.events.forEach((evs, s) => { for (const e of evs) if (e.note !== undefined) {
+    g.fillStyle = COLORS[e.tr.index % COLORS.length];
+    g.fillRect(s / song.totalSteps * W, 68 - (e.note - lo) / span * 64 - 1, Math.max(1, e.len / song.totalSteps * W - 0.5), 2);
+  } else { g.fillStyle = '#4a4458'; g.fillRect(s / song.totalSteps * W, 68, 1, 3); } });
+  // waveform envelope (steady pass) in the bottom 36 px
+  const start = song.loop ? Math.round(L * SR) : 0, len = Math.round(L * SR);
+  for (let x = 0; x < W; x++) {
+    const i0 = start + Math.floor(x / W * len), i1 = start + Math.floor((x + 1) / W * len);
+    let m = 0; for (let i = i0; i < i1 && i < N; i += 4) m = Math.max(m, Math.abs(a[i]));
+    g.fillStyle = m > 0.95 ? '#ff4040' : '#f08a1c'; const h = m * 34; g.fillRect(x, 92 - h / 2, 1, Math.max(1, h));
+  }
+  g.fillStyle = '#fde3b0'; g.font = '11px monospace'; g.fillText(`${name}  ${song.bpm}bpm  ${song.bars} bars  ${L.toFixed(1)}s`, 6, 11);
+  const h = document.createElement('div'); h.className = 'nm'; h.textContent = name;
+  document.getElementById('plots').append(c);
+}
+
+window.__analyse = analyse;
+window.__renderAll = async () => {
+  document.getElementById('plots').textContent = '';
+  const rows = [];
+  for (const name of MUSIC) {
+    try { rows.push(await analyse(name)); } catch (e) { rows.push({ name, ok: false, why: 'ERROR ' + e.message }); }
+  }
+  out.innerHTML = rows.map(r => `<span class="${r.ok ? 'ok' : 'bad'}">${r.name.padEnd(13)} dur ${String(r.dur).padStart(6)} peak ${String(r.peak).padStart(6)} rms ${String(r.rms).padStart(7)} ${r.ok ? 'OK' : r.why}</span>`).join('\n');
+  return rows;
+};
+document.getElementById('rt').onclick = () => { out.textContent = 'rendering...'; window.__renderAll(); };
+window.__demoReady = true;
+</script></body></html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>postfx demo</title>
+<style>html,body{margin:0;background:#222;color:#ccc;font:12px monospace}canvas{display:block;image-rendering:pixelated}</style></head>
+<body><canvas id="c" width="1280" height="720"></canvas>
+<script type="module">
+import { createPostFX } from './postfx.js';
+const q = new URLSearchParams(location.search);
+const f = (k, d) => q.has(k) ? parseFloat(q.get(k)) : d;
+const W = f('w', 320), H = f('h', 180);
+const cv = document.getElementById('c');
+cv.width = f('ow', 1280); cv.height = f('oh', 720);
+window.__demo = { done: false, error: null, info: null };
+try {
+  const gl = cv.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
+  if (!gl) throw new Error('no webgl2');
+  const pfx = createPostFX(gl);
+  pfx.resize(W, H, cv.width, cv.height);
+  // synthetic HDR scene shader
+  const vs = `#version 300 es
+  void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));gl_Position=vec4(p*2.-1.,0.,1.);}`;
+  const fs = `#version 300 es
+  precision highp float; out vec4 o; uniform vec2 uS;
+  void main(){
+    ivec2 t=ivec2(gl_FragCoord.xy); vec2 uv=gl_FragCoord.xy/uS;
+    // gradient background, dim
+    vec3 c=mix(vec3(0.05,0.04,0.08),vec3(0.5,0.35,0.2),uv.x)*(0.3+0.7*uv.y);
+    // checker crispness test (bottom-left)
+    if(t.x<64&&t.y<40) c=(((t.x/4)+(t.y/4))%2==0)?vec3(0.9):vec3(0.05);
+    // 1-texel lines
+    if(t.x>=70&&t.x<110&&t.y<40) c=((t.x&1)==0)?vec3(1.0,0.2,0.2):vec3(0.1);
+    // HDR ramp strip top: 0.25..16
+    if(float(t.y)>uS.y-14.){ c=vec3(0.25*exp2(floor(uv.x*7.))); }
+    // bright single texels of varying intensity
+    vec2 pts[5]=vec2[5](vec2(80.,110.),vec2(160.,90.),vec2(240.,110.),vec2(120.,60.),vec2(200.,60.));
+    float val[5]=float[5](6.,20.,60.,3.,10.);
+    for(int i=0;i<5;i++){ if(t==ivec2(pts[i])) c=vec3(val[i],val[i]*0.85,val[i]*0.5); }
+    // emissive 3x3 coloured lamp
+    if(abs(t.x-280)<=1&&abs(t.y-120)<=1) c=vec3(1.5,6.0,12.0);
+    // medium emissive block (cheese-molten)
+    if(t.x>=130&&t.x<150&&t.y>=130&&t.y<140) c=vec3(2.5,1.4,0.2);
+    o=vec4(c,1.);
+  }`;
+  const mk=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x;};
+  const pr=gl.createProgram();gl.attachShader(pr,mk(gl.VERTEX_SHADER,vs));gl.attachShader(pr,mk(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(pr));
+  const vao=gl.createVertexArray();
+  const flash = q.has('flash') ? q.get('flash').split(',').map(Number) : [0,0,0,0];
+  const opts = { time: f('time', 1.5), exposure: f('exposure', 1), bloom: f('bloom', 1), crt: f('crt', 0),
+    flash, hurt: f('hurt', 0), wobble: f('wobble', 0) };
+  if (q.has('streaks')) opts.streaks = f('streaks', 1);
+  if (q.has('dither')) opts.dither = f('dither', 1);
+  const frame = () => {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, pfx.target);
+    gl.viewport(0, 0, W, H);
+    gl.useProgram(pr); gl.bindVertexArray(vao);
+    gl.uniform2f(gl.getUniformLocation(pr, 'uS'), W, H);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    pfx.draw(opts);
+  };
+  frame();
+  // sample readback
+  const px = new Uint8Array(4); const rd=(x,y)=>{gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.readPixels(x,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);return Array.from(px);};
+  window.__demo.info = { hdr: pfx.hdr, format: pfx.format, err: gl.getError(), corner: rd(5, 5) };
+  window.__demo.frame = frame; window.__demo.read = rd;
+  window.__demo.done = true;
+} catch (e) { window.__demo.error = String(e && e.stack || e); window.__demo.done = true; }
+</script></body></html>

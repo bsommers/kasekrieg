@@ -1,0 +1,51 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>menus demo</title>
+<style>html,body{margin:0;background:#111;color:#ccc;font:12px monospace}canvas{display:block;image-rendering:pixelated;width:1440px;height:810px}</style></head>
+<body><canvas id="c" width="480" height="270"></canvas>
+<script type="module">
+// Usage: menus-demo.html?view=title|main|skill|options|controls|pause|confirmQuit|levelIntro|intermission|death|gameOver|victory
+//   &t=seconds (simulated time to advance before freezing)  &sel=N (selected row)  &atlas=0 (skip real atlas)
+import { createMenus } from './menus.js';
+import { createScreens } from './screens.js';
+const q = new URLSearchParams(location.search);
+const view = q.get('view') || 'title', T = parseFloat(q.get('t') ?? '3'), SEL = q.has('sel') ? +q.get('sel') : null;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+window.__demo = { done: false, error: null, view };
+const STATS = { kills: 17, killsTotal: 21, treasure: 9, treasureTotal: 9, secrets: 1, secretsTotal: 3, time: 142, par: 120 };
+try {
+  let atlas = null;
+  if (q.get('atlas') !== '0') { try { atlas = await (await import('../art/registry.js')).buildAtlas(); } catch (e) { window.__demo.atlasError = String(e); } }
+  const menus = createMenus({ atlas, settings: { quality: 'auto', sensitivity: 1, volume: { master: .8, sfx: .9, music: .6 }, fov: 1.5, crt: false, showFps: true, skill: 2 }, canContinue: true });
+  const screens = createScreens({ atlas });
+  const MENUS = ['title', 'main', 'skill', 'options', 'controls', 'pause', 'confirmQuit'];
+  const isMenu = MENUS.includes(view);
+  if (isMenu) menus.open(view === 'confirmQuit' ? 'pause' : view);
+  else screens.show(view, {
+    index: 2, name: 'The Fondue Works', intro: 'Molten cheese bubbles in every pipe. Try not to fall in.', par: 150, skill: 2,
+    stats: STATS, score: 18450, last: false, livesLeft: 7,
+  });
+  if (view === 'confirmQuit') { menus.update(0.2, {}); menus.update(0.2, { down: true }); menus.update(0.2, { down: true }); menus.update(0.2, { down: true }); menus.update(0.2, { accept: true }); }
+  let t = 0; const dt = 1 / 60;
+  const step = () => { t += dt; isMenu ? menus.update(dt, {}) : screens.update(dt, {}); };
+  for (let i = 0; i < Math.round(T * 60); i++) {
+    step();
+    if (SEL !== null && isMenu && i === 20) { for (let k = 0; k < SEL; k++) menus.update(dt, { down: true }); }
+  }
+  // fake attract scene backdrop: dim stone corridor gradient with a few glowing lamps
+  const bg = () => {
+    const g = ctx.createLinearGradient(0, 0, 0, 270); g.addColorStop(0, '#3a3a52'); g.addColorStop(.5, '#6a5a48'); g.addColorStop(1, '#2a2418');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 480, 270);
+    for (let x = 0; x < 480; x += 32) for (let y = 0; y < 270; y += 32) { ctx.fillStyle = ((x + y) / 32) & 1 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)'; ctx.fillRect(x, y, 32, 32); }
+    for (const [lx, ly] of [[90, 80], [390, 80], [240, 150]]) { const r = ctx.createRadialGradient(lx, ly, 2, lx, ly, 90); r.addColorStop(0, 'rgba(255,200,90,.7)'); r.addColorStop(1, 'rgba(255,200,90,0)'); ctx.fillStyle = r; ctx.fillRect(0, 0, 480, 270); }
+  };
+  bg();
+  (isMenu ? menus : screens).draw(ctx, t);
+  window.__demo.done = true; window.__demo.info = { atlasMissing: atlas?.missing?.length ?? null, active: isMenu ? menus.active : screens.active };
+  if (q.get('live') === '1') { // animate in real time for humans
+    const ks = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'accept', Escape: 'back' };
+    let inp = {}; addEventListener('keydown', e => { if (ks[e.key]) inp[ks[e.key]] = true; });
+    const loop = () => { t += 1 / 60; const o = isMenu ? menus.update(1 / 60, inp) : screens.update(1 / 60, inp); if (o) console.log(o); inp = {}; bg(); (isMenu ? menus : screens).draw(ctx, t); requestAnimationFrame(loop); };
+    loop();
+  }
+} catch (e) { window.__demo.error = String(e && e.stack || e); console.error(e); }
+</script></body></html>
