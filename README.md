@@ -114,3 +114,7 @@ ARCHITECTURE.md the binding module contract
 ## How it was built
 
 By a swarm of AI agents working from `ARCHITECTURE.md` and a manifest. To redo it elsewhere, read `docs/BUILD-SPEC.md`; lessons are in `docs/LEARNINGS.md`; per-agent reports are in `docs/swarm/reports/`.
+
+## License
+
+Licensed under the [Apache License, Version 2.0](LICENSE).

@@ -6,7 +6,7 @@
   "private": true,
   "main": "main.cjs",
   "author": "KÄSEKRIEG swarm",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "scripts": {
     "start": "electron .",
     "smoke": "electron . --smoke=../out/shots/desktop-shell/dev-smoke",
