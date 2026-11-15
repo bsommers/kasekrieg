@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KÄSEKRIEG: Claws of Marmalade</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <canvas id="hud" width="480" height="270"></canvas>
+  <div id="overlay" hidden><div class="ov-head"><b>KÄSEKRIEG hit a hairball</b><button id="ov-close" type="button" aria-label="Dismiss">×</button></div><ol id="ov-list"></ol></div>
+</div>
+<noscript><p class="noscript">KÄSEKRIEG needs JavaScript (ES modules) and WebGL2.</p></noscript>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

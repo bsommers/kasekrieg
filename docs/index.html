@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KÄSEKRIEG: Claws of Marmalade</title>
+<meta name="description" content="A Wolfenstein-style first-person maze shooter with a WebGL2 ray tracer. Play Major Marmalade, an orange tabby with nine lives, against the rats and mice of Das Rattenreich. Play free in your browser.">
+<meta property="og:title" content="KÄSEKRIEG: Claws of Marmalade">
+<meta property="og:description" content="Ray-traced, blocky, cheese-powered cat vs rat shooter. Play in your browser or download for Linux, Windows and macOS.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://bsommers.github.io/kasekrieg/screenshots/title.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#b3121b">
+<link rel="icon" type="image/svg+xml" href="site/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="site/style.css">
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="brand pf" href="#top"><img src="site/favicon.svg" alt="" width="28" height="28">KÄSEKRIEG</a>
+  <div class="links pf"><a href="#screens">Screens</a><a href="#features">Features</a><a href="#cast">Cast</a><a href="#controls">Controls</a><a href="#download">Download</a><a href="https://github.com/bsommers/kasekrieg">GitHub</a></div>
+</div></nav>
+
+<header class="hero" id="top"><div class="wrap">
+  <svg class="emblem" viewBox="0 0 32 32" shape-rendering="crispEdges" role="img" aria-label="Cheese wedge emblem"><rect width="32" height="32" fill="#b3121b"/><circle cx="16" cy="16" r="12" fill="#fff"/><path d="M7 21 L25 21 L25 13 Z" fill="#111"/><rect x="18" y="17" width="2" height="2" fill="#fff"/><rect x="12" y="19" width="2" height="1" fill="#fff"/></svg>
+  <p class="eyebrow pf">A cat. Nine lives. One cheese crisis.</p>
+  <h1 class="logo pf">KÄSEKRIEG</h1>
+  <p class="sub pf">Claws of Marmalade</p>
+  <p class="tag">A blocky, ray-traced first-person maze shooter. You are Major Marmalade, a big orange tabby. Fight through six levels of Das Rattenreich.</p>
+  <div class="cta">
+    <a class="btn big" href="play/">&#9654; PLAY IN BROWSER</a>
+    <a class="btn ghost" href="#download">Download</a>
+  </div>
+  <div class="stats pf">
+    <div class="stat"><b>6</b><span>LEVELS</span></div>
+    <div class="stat"><b>5</b><span>WEAPONS</span></div>
+    <div class="stat"><b>8</b><span>SONGS</span></div>
+    <div class="stat"><b>9</b><span>LIVES</span></div>
+  </div>
+</div></header>
+
+<section id="screens"><div class="wrap">
+  <h2 class="pf">Screenshots</h2>
+  <div class="grid g2">
+    <figure class="shot"><a href="screenshots/title.png"><img src="screenshots/title.png" alt="Title screen with the cheese-textured KÄSEKRIEG logo" loading="lazy"></a><figcaption class="pf">Title screen</figcaption></figure>
+    <figure class="shot"><a href="site/img/shot-throne.png"><img src="site/img/shot-throne.png" alt="Red carpeted throne hall" loading="lazy"></a><figcaption class="pf">Throne of the Big Cheese</figcaption></figure>
+    <figure class="shot"><a href="screenshots/great-cellar.png"><img src="screenshots/great-cellar.png" alt="The Great Cellar" loading="lazy"></a><figcaption class="pf">The Cheese Cellar</figcaption></figure>
+    <figure class="shot"><a href="site/img/shot-hall.png"><img src="site/img/shot-hall.png" alt="Mirrored hall with reflective floor" loading="lazy"></a><figcaption class="pf">Moonlit Hall of Mirrors</figcaption></figure>
+    <figure class="shot"><a href="site/img/shot-fondue.png"><img src="site/img/shot-fondue.png" alt="Molten cheese factory" loading="lazy"></a><figcaption class="pf">The Fondue Works</figcaption></figure>
+    <figure class="shot"><a href="site/img/shot-vault.png"><img src="site/img/shot-vault.png" alt="The Blue Vault" loading="lazy"></a><figcaption class="pf">The Blue Vault</figcaption></figure>
+    <figure class="shot"><a href="screenshots/guard-room.png"><img src="screenshots/guard-room.png" alt="Guard room" loading="lazy"></a><figcaption class="pf">Guard room</figcaption></figure>
+    <figure class="shot"><a href="screenshots/automap.png"><img src="screenshots/automap.png" alt="Automap" loading="lazy"></a><figcaption class="pf">Automap</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="features"><div class="wrap">
+  <h2 class="pf">What you get</h2>
+  <ul class="feat">
+    <li><b>WebGL2 ray tracer.</b> Lit, shadowed, reflective and sparkly, but still blocky. Post-processing adds bloom and star streaks.</li>
+    <li><b>Six levels.</b> The Cheese Cellar, Rat Barracks, The Fondue Works, Moonlit Hall of Mirrors, The Blue Vault, Throne of the Big Cheese.</li>
+    <li><b>Five weapons.</b> Claws, Hairball Pistol, Purr-forator, Yarn Bomber and Der Rote Punkt.</li>
+    <li><b>Eight original songs.</b> A tracker-style chiptune engine plays them, with WebAudio synth sound effects.</li>
+    <li><b>Four skills.</b> Kitten, House Cat, Alley Cat, Nine Lives Nightmare.</li>
+    <li><b>All generated by code.</b> Art, levels and music come from this repo. Zero assets, all cats. Gamepads work too.</li>
+    <li><b>No dependencies.</b> Plain ES modules; the browser build needs only WebGL2.</li>
+    <li><b>Desktop builds.</b> Electron shells for Linux, Windows and macOS.</li>
+  </ul>
+</div></section>
+
+<section id="cast"><div class="wrap">
+  <h2 class="pf">Das Rattenreich</h2>
+  <div class="rats">
+    <div class="rat"><img src="site/img/mouse.png" alt="Maus Schütze sprite" width="256" height="256" loading="lazy"><h3 class="pf">Maus Schütze</h3><small>Pistol-packing mouse rifleman.</small></div>
+    <div class="rat"><img src="site/img/trooper.png" alt="Sturmratte sprite" width="256" height="256" loading="lazy"><h3 class="pf">Sturmratte</h3><small>Rat trooper with a three-shot SMG.</small></div>
+    <div class="rat"><img src="site/img/officer.png" alt="Ratten-Offizier sprite" width="256" height="256" loading="lazy"><h3 class="pf">Ratten-Offizier</h3><small>Quick-firing officer.</small></div>
+    <div class="rat"><img src="site/img/sewer.png" alt="Kanalratte sprite" width="256" height="256" loading="lazy"><h3 class="pf">Kanalratte</h3><small>Fast sewer rat. Bites.</small></div>
+    <div class="rat"><img src="site/img/panzer.png" alt="Panzerratte sprite" width="256" height="256" loading="lazy"><h3 class="pf">Panzerratte</h3><small>Heavily armoured, 120 HP.</small></div>
+    <div class="rat"><img src="site/img/boss.png" alt="Der Große Käse boss sprite" width="320" height="320" loading="lazy"><h3 class="pf">Der Große Käse</h3><small>The boss. Twin gatlings, cheese-wheel crown.</small></div>
+  </div>
+  <h2 class="pf" style="margin-top:48px">Your arsenal</h2>
+  <div class="grid g3" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    <div class="wpn"><img src="site/img/w-claws.png" alt="Claws" width="384" height="384" loading="lazy"><b class="pf">Claws</b></div>
+    <div class="wpn"><img src="site/img/w-pistol.png" alt="Hairball Pistol" width="384" height="384" loading="lazy"><b class="pf">Hairball Pistol</b></div>
+    <div class="wpn"><img src="site/img/w-gatling.png" alt="Purr-forator" width="384" height="384" loading="lazy"><b class="pf">Purr-forator</b></div>
+    <div class="wpn"><img src="site/img/w-yarn.png" alt="Yarn Bomber" width="384" height="384" loading="lazy"><b class="pf">Yarn Bomber</b></div>
+    <div class="wpn"><img src="site/img/w-laser.png" alt="Der Rote Punkt" width="384" height="384" loading="lazy"><b class="pf">Der Rote Punkt</b></div>
+  </div>
+</div></section>
+
+<section id="controls"><div class="wrap">
+  <h2 class="pf">Controls</h2>
+  <table>
+    <tr><th>ACTION</th><th>KEYS</th></tr>
+    <tr><td>Move</td><td><kbd>W</kbd><kbd>S</kbd> or <kbd>&uarr;</kbd><kbd>&darr;</kbd></td></tr>
+    <tr><td>Strafe</td><td><kbd>A</kbd><kbd>D</kbd></td></tr>
+    <tr><td>Turn</td><td>Mouse (click to lock pointer), <kbd>&larr;</kbd><kbd>&rarr;</kbd></td></tr>
+    <tr><td>Fire</td><td>Left mouse button, <kbd>Ctrl</kbd></td></tr>
+    <tr><td>Run</td><td><kbd>Shift</kbd></td></tr>
+    <tr><td>Use (doors, switches, pushwalls)</td><td><kbd>Space</kbd> or <kbd>E</kbd></td></tr>
+    <tr><td>Select weapon</td><td><kbd>1</kbd>-<kbd>5</kbd>, <kbd>Q</kbd> cycles, mouse wheel</td></tr>
+    <tr><td>Meow (distraction noise)</td><td><kbd>M</kbd></td></tr>
+    <tr><td>Automap</td><td><kbd>Tab</kbd></td></tr>
+    <tr><td>Pause / back</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
+  </table>
+  <p class="note">Gamepads are supported. Mouse sensitivity and volumes are in the Options menu.</p>
+</div></section>
+
+<section id="download"><div class="wrap">
+  <h2 class="pf">Play and download</h2>
+  <p style="text-align:center;margin:0 0 28px"><a class="btn big" href="play/">&#9654; PLAY IN BROWSER</a></p>
+  <div class="dl">
+    <div class="card"><h3 class="pf">Linux</h3><p>.deb, .sh and tarball (x64)</p><a class="btn" href="https://github.com/bsommers/kasekrieg/releases/latest">Get Linux build</a></div>
+    <div class="card"><h3 class="pf">Windows</h3><p>Setup.exe or zip (x64)</p><a class="btn" href="https://github.com/bsommers/kasekrieg/releases/latest">Get Windows build</a></div>
+    <div class="card"><h3 class="pf">macOS</h3><p>.dmg or zip (arm64)</p><a class="btn" href="https://github.com/bsommers/kasekrieg/releases/latest">Get macOS build</a></div>
+  </div>
+  <p class="note">All download assets are attached to the <a href="https://github.com/bsommers/kasekrieg/releases/latest">latest release</a>. Builds are unsigned: on macOS right-click and choose Open, on Windows choose "More info" then "Run anyway". The browser version needs a browser with WebGL2.</p>
+</div></section>
+
+<footer><div class="wrap">
+  KÄSEKRIEG is an original game. All art, levels and music are generated by code; the enemy emblem is a cheese wedge.<br>
+  <a href="https://github.com/bsommers/kasekrieg">Source on GitHub</a>
+</div></footer>
+<script src="site/main.js" defer></script>
+</body>
+</html>
