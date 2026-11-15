@@ -535,3 +535,42 @@ polish-ui 79k/117 + 64k/158 · polish-level-1 68k/89 · -4 71k/102 · -2 69k/113
 ## UPDATE 2026-11-15T01:09Z — session resumed; endgame
 Tests 173/173 (verified). Fresh sonnet agents spawned: audio-music a15e5ff2822251924, final-qa a689d16db88953fa8 (resume from docs/swarm/progress/<id>.md; if cut off, spawn fresh).
 Orchestrator end list (items 1-6 under 21:00Z UPDATE) still open: README test count, BUILD-SPEC cost table, look at screenshots, rebuild 3 OSes after agents finish, PLAYBOOK re-sync, final run + open game.
+
+## UPDATE 2026-11-15T01:31:59Z — sixth limit hit (01:21Z), reset 01:30Z
+User: "keep going, launch the rest as slots free up". The two fresh agents from 01:09Z were cut off at 01:21Z
+(window drained in ~11 min with only 2 sonnet agents + the orchestrator at 255k context on a cold cache → the
+ORCHESTRATOR is now the main cost; compact it).
+State from their checkpoints: audio-music 70% (8 songs written, render check running, report not written);
+final-qa 40% (botplay --fight works, level 1 passes; all-levels run + stage 2/3 not done).
+Spawning fresh sonnet agents again for audio-music and final-qa (same prompts; they read docs/swarm/progress/<id>.md).
+When BOTH are done → spawn `release-final` (sonnet; prompt docs/swarm/prompts/release-final.md — does the whole
+orchestrator end list: tests, learnings append, BUILD-SPEC cost table, screenshot check, 3 rebuilds + smoke,
+PLAYBOOK re-sync). After it: orchestrator only verifies its report, marks phases done
+(`node tools/swarm-plan.mjs --phase p4=done,p5=done`), and opens the game for the user
+(`dist/Kaesekrieg-linux-x64/kaesekrieg.sh` or `node tools/serve.mjs` + browser).
+
+## UPDATE 2026-11-15T01:34:43Z
+DONE: final-qa (report docs/swarm/reports/final-qa.md). Fighting bot (no god mode, real keys, skill 2): levels 1–5
+exit in 3/3 runs, health ≥ 84, ammo never dry; level 6 beaten 2/3 incl. boss (needs --max 300; the failed seed 106
+died 5× and ran out of ammo at the boss). Soak low+ultra 120 s per level: 0 console errors in 12 runs. Tests 173/173.
+No src changes. Open suggestion: one extra ammo pickup in the level-6 boss arena (→ give to release-final as its
+only allowed src edit; validate + botplay after).
+Running (1): audio-music (fresh, a5c9c9ff588ee4df7). When it reports → spawn release-final with the note above.
+
+## UPDATE 2026-11-15T01:40:42Z
+DONE: audio-music (35 of 35 wave-1 pieces). All 8 songs render offline with no clipping/NaN, loops within limits;
+test/audio-music.test.mjs 9/9. Deviation: songs live in src/audio/music.js, not src/audio/songs/. Nobody has LISTENED.
+Launched release-final (sonnet; + the one level-6 ammo pickup from final-qa). Running (1): release-final.
+If it ends with CONTINUE → spawn fresh with the same prompt. When done: read docs/swarm/reports/release-final.md,
+`node tools/swarm-plan.mjs --phase p4=done,p5=done`, open the game for the user, final summary.
+
+## UPDATE 2026-11-15T01:46:54Z — PROJECT COMPLETE
+release-final DONE (docs/swarm/reports/release-final.md): +1 ammo_box in the level-6 arena; tests 173/173; god-mode
+botplay 6/6; README/BUILD-SPEC/LEARNINGS updated; screenshots checked (automap replaced); all three packages rebuilt
+and smoke-tested with 0 errors (dist/Kaesekrieg-linux-x64/ + kaesekrieg.sh launcher, dist/Kaesekrieg-darwin-arm64.zip,
+dist/Kaesekrieg-win32-x64.zip); swarm-tracker PLAYBOOK re-synced (npm test 8/8; still uncommitted).
+All phases p0–p5 marked done in .tracker/plan.json. LEARNINGS item 15 added. No git commits anywhere.
+Left running: tracker dashboard on :4780; Windows VM (was started for the build — user may stop it with
+`cd ~/src/infra/win-devvm && ./vm.sh stop`).
+Known open points: nobody has listened to SFX/music; balance checked only by a bot; game-over/victory screens not
+screenshotted; macOS ad-hoc signed, Windows unsigned; integrated-GPU performance untested.

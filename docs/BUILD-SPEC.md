@@ -108,7 +108,21 @@ Dollars were not recorded. Token counts per agent were copied by hand from task 
 | p2 integ-lead | 1 | sonnet | 12 min (20:38-20:50) | integ A 51k / 29 s; B 64k / 71 s; C1 62k / 175 s; C2 68k / 145 s; D 67k / 155 s; E 52k / 113 s |
 | p3 polish | 9 | sonnet | 1-5 min each, 20:48-20:57 | polish-global 103k / 219 s; polish-art 65k / 45 s + 78k / 80 s; polish-ui 79k / 117 s + 64k / 158 s; polish-level-1 68k / 89 s; -2 69k / 113 s; -3 66k / 126 s; -4 71k / 102 s; -5 66k / 114 s; -6 66k / 87 s |
 | p5 docs | tracker-repo (3 min), docs-final | sonnet | 20:44 onward | tracker-repo 92k / 166 s; docs-final not recorded |
-| Usage-limit hits | 4 | n/a | 5-hour windows; about 3 hours lost after the first | n/a |
+| p1/p5 native packaging | native-macos, native-windows | sonnet | see tracker | native-macos 52k / 110 s; native-windows 57k / 129 s (from `docs/CHECKPOINT.md`, "Token/time per agent") |
+| Usage-limit hits | 6 | n/a | 5-hour windows; see table below | n/a |
+
+Agents with no figure in `docs/CHECKPOINT.md` ("Token/time per agent") remain "not recorded": no number was captured and none is invented here.
+
+Usage-limit hits (from `docs/LEARNINGS.md` items 8-14 and `docs/CHECKPOINT.md`):
+
+| Hit | When (UTC, 2026-11-14 unless noted) | Agents running | Models | Effect and what changed afterwards |
+|---|---|---|---|---|
+| 1 | first window, ~09-12 | 20 (+140k dashboard agent, ~200k orchestrator) | top-tier mix | All 20 died on HTTP 429; ~3 h lost. Rules: design in small context, checkpoint before the swarm, budget tiers, resumable agents |
+| 2 | ~14:20 | 20 | 15 opus/fable, 5 sonnet | Only the 5 sonnet finished. Cap 8 concurrent, critical path first, fable only for render-core (model plan v3) |
+| 3 | ~15:15 (CHECKPOINT: 19:55) | 8 | 1 fable, 4 opus, 3 sonnet | 6 died. Cap 4 running, max 1 fable + 2 opus; resume via SendMessage |
+| 4 | ~20:00, 10 min after the reset | 12 (6 resumed, 6 fresh, 4 at a time) | opus/fable then sonnet | Window gone in ~10 min plus the Fable cap. Model plan v4: sonnet only, 30-line checkpoints, fresh agents, never resume big transcripts |
+| 5 | not documented in LEARNINGS | not recorded | not recorded | not recorded |
+| 6 | 2026-11-15 01:21 (reset 01:30) | 2 + orchestrator at ~255k context | sonnet | audio-music (70%) and final-qa (40%) cut off; orchestrator context was the main cost; compact it, respawn fresh agents from checkpoints |
 
 Note: agents on a fresh context at ~50-70k tokens each were far cheaper than resumed ones at 100-190k.
 

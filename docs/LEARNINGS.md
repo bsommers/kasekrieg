@@ -154,3 +154,21 @@ Distilled from the **Mistakes** and **Learnings** sections of `docs/swarm/report
 - Resuming over a half-finished file: read it, run it, then continue. A previous agent's 788-line draft had never been run [art-hud, art-walls-cheese, app-shell, render-postfx].
 - Tests with placeholder junk or wrong expectations (BFS distance, too few walk ticks, player inside the exit cell) [core-input, sim-world, sim-player, art-items].
 - Out-of-budget image reads: agents that could not view their final tweak relied on numeric tests; say so in the report [polish-art, polish-level-1].
+- Headless software-mode renders of all 8 songs in one page exceed 200 s: analyse per song, one chrome per song in parallel (`--gpu none`, `--timeout 570000`); judge loops by relative RMS error, not max-diff (sub-sample noise shifts) [audio-music].
+- Bots/soaks run in real time: 12 parallel bots starve the CPU and the sim lags, so run <=6 at once; a short `--max` (150 s) on the boss level reads as a failure, use >=300 [final-qa].
+- Mistake: a fight-bot verdict is only as good as its time cap; a timeout is not a block. Check the log before calling a level broken [final-qa].
+- Tracker timestamps include limit-reset waits and no token counts exist: record usage per agent at the time, or the cost table stays "not recorded" [docs-final].
+- Mistake: wrong tool name on the first edit (`bash` vs `Bash`) [docs-final].
+
+## 15. Limit hits five and six — the orchestrator became the main cost (2026-11-15T01:46:54Z)
+- **What happened:** with plan v4 (sonnet only, fresh contexts, 50–100k tokens per agent) about 40 agents ran in
+  roughly 30 minutes of wall time on one window. The window still ran out twice more near the end, the last time
+  with only two sonnet agents running.
+- **Why:** the orchestrator ran on the top-tier model with a 250k-token context, re-sent on every completion
+  notice; after each idle gap the cache was cold, so each wake-up cost a full re-read.
+- **Rules:** compact the orchestrator between waves (not only when warned); keep the checkpoint file good enough
+  that compaction loses nothing; batch several small jobs into one agent so there are fewer completion notices;
+  give the close-out list (tests, rebuilds, docs fixes) to one cheap agent instead of doing it in the
+  orchestrator's context; consider running the orchestrator itself on a mid-tier model once the plan is fixed.
+- **What worked:** staged agents that end with `CONTINUE:` and a 30-line checkpoint — every cut-off agent was
+  continued by a fresh one without loss. Scripted in-page assertions instead of screenshots kept QA agents small.

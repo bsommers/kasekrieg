@@ -81,7 +81,7 @@ More detail: `desktop/README.md`, `docs/swarm/reports/{desktop-shell,native-maco
 ## Tests and tools
 
 ```
-node --test test/                                  # unit tests (173 passing at last full count)
+node --test test/                                  # unit tests (173 passing, 0 failing)
 node tools/validate-level.mjs src/levels/e1m1.js   # level rules + PNG preview
 node tools/sheet.mjs <artModule> [--scale N]       # art contact sheet -> out/previews/
 node tools/shot.mjs --url "/index.html?autostart=1&level=1" --out out/shots/x.png [--size 1280x720] [--wait-for "<js>"] [--keys "w:800"]
@@ -103,7 +103,7 @@ src/render/     WebGL2 ray tracer, post-processing (bloom, star streaks, tonemap
 src/sim/        world (grid, doors, pathing), game/player/weapons, enemies, projectiles, effects
 src/levels/     e1m1..e1m6 and the level index
 src/ui/         bitmap font, HUD, automap, menus
-src/audio/      WebAudio synth SFX and tracker-based music
+src/audio/      WebAudio synth SFX (sfx.js) and tracker music engine (music.js; the song modules live in src/audio/songs/)
 desktop/        Electron shell and native build scripts
 tools/          server, screenshots, validators, bot, swarm planner, tracker
 test/           node:test suites
