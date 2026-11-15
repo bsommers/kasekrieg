@@ -584,3 +584,17 @@ Their reports: docs/swarm/reports/installer-{linux,macos,windows}.md, pages-site
 Orchestrator TODO after all 4 finish: (1) verify installer files in dist/ + reports; (2) commit (specific paths, no dist/out), `git push origin main`;
 (3) enable Pages: `gh api -X POST repos/bsommers/kasekrieg/pages -f 'source[branch]=main' -f 'source[path]=/docs'`; (4) `gh release create v1.0.0` with dist installers (+ zips/tarball) as assets, notes from README;
 (5) verify the Pages URL https://bsommers.github.io/kasekrieg/ and /play/ load; (6) open the game for user. Not listened: music quality only checked numerically.
+
+## UPDATE 2026-11-15T~03:00Z — SHIPPED (supersedes the 02:20Z "shipping phase" TODO list)
+State: all work is done and published. origin/main = 5b8b833 (pushed, tree clean apart from this checkpoint edit, which is NOT committed).
+- Repo https://github.com/bsommers/kasekrieg (PUBLIC), Apache-2.0 (LICENSE + package.json + desktop/package.json + README).
+- Pages LIVE: https://bsommers.github.io/kasekrieg/ and /play/ (both 200). docs/play is a committed copy of the game: rerun `node tools/build-site.mjs` after any src/ change, then commit+push.
+- Release v1.0.0 LIVE with 8 assets: Windows Setup.exe + zip, macOS .dmg + zip (arm64), Linux .deb + install.sh + tar.gz, SHA256SUMS.txt. Built artifacts live in dist/ (gitignored). Unsigned (SmartScreen / Gatekeeper warnings noted in release notes).
+- Installer scripts: desktop/scripts/installer-{linux,macos,windows}.sh (+ win/installer.nsi). mac via MAC_HOST=bill@bigmac.local; windows via ~/src/infra/win-devvm (VM left running; portable NSIS cached in VM at C:\Users\dev\kaesekrieg-build\.nsis).
+- Tests 173/173; botplay reaches exit on all 6 levels; all agents finished (no agents running). Swarm tracker repo: ~/src/ai/agents/swarm-tracker (git init only, no commit/remote).
+- Linux game build was launched for the user (dist/Kaesekrieg-linux-x64/kaesekrieg.sh); user closed it once and asked for a relaunch (running pid ~2865617).
+Latest user instructions (verbatim): "commit and push. make sure we have an installer"; "make a github pages for this - really snazzy with game theme and graphics"; "make executable release for this for Linux, Windows, MacOS"; "Apache 2 License. commit and push"; "launch the Linux build"; "relaunch. I closed the window"; "compact and save the checkpoint".
+Open / not done: music never listened to by a human (numeric checks only); .deb Depends untested on a clean system; level 6 boss hardest (bot 2/3); bot never finds secrets or 100% kills; no LEARNINGS entry for the 5th usage-limit hit; swarm-tracker repo uncommitted; tracker server still on :4780 (pid 4162899).
+Gotcha: `pkill -f '<pattern>'` inside Bash kills its own shell (exit 144) — use `pgrep -f '[x]pattern'`.
+Authorizations: commit/push/release/Pages were granted for THIS shipping task only; re-ask before any new push, release, or repo setting change.
+Next (if the user wants more): bump version + rebuild + new release for any src change; listen-test the music; commit swarm-tracker when asked.
