@@ -574,3 +574,13 @@ Left running: tracker dashboard on :4780; Windows VM (was started for the build 
 `cd ~/src/infra/win-devvm && ./vm.sh stop`).
 Known open points: nobody has listened to SFX/music; balance checked only by a bot; game-over/victory screens not
 screenshotted; macOS ad-hoc signed, Windows unsigned; integrated-GPU performance untested.
+
+## UPDATE 2026-11-15T~02:20Z — shipping phase (supersedes endgame notes above)
+Wave 1-5 DONE and committed locally (commit "Wrap-up: final QA..."; NOT yet pushed). Verified: tests 173/173, botplay exits all 6 levels,
+dist/ has linux folder + darwin zip + win32 zip (all smoked). Remote: origin https://github.com/bsommers/kasekrieg (PUBLIC, gh logged in as bsommers, no releases yet).
+User instructions (verbatim, latest): "commit and push. make sure we have an installer"; "make a github pages for this - really snazzy with game theme and graphics"; "make executable release for this for Linux, Windows, MacOS". Cap: max 4 agents, sonnet.
+Running (4 sonnet): installer-linux (.deb + self-extract install.sh), installer-macos (.dmg via bigmac), installer-windows (Setup.exe in VM), pages-site (docs/index.html + docs/play + tools/build-site.mjs).
+Their reports: docs/swarm/reports/installer-{linux,macos,windows}.md, pages-site.md.
+Orchestrator TODO after all 4 finish: (1) verify installer files in dist/ + reports; (2) commit (specific paths, no dist/out), `git push origin main`;
+(3) enable Pages: `gh api -X POST repos/bsommers/kasekrieg/pages -f 'source[branch]=main' -f 'source[path]=/docs'`; (4) `gh release create v1.0.0` with dist installers (+ zips/tarball) as assets, notes from README;
+(5) verify the Pages URL https://bsommers.github.io/kasekrieg/ and /play/ load; (6) open the game for user. Not listened: music quality only checked numerically.
